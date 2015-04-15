@@ -6,7 +6,7 @@ import java.util.Scanner;
 public class InventoryView {
 
     private final int QUIT = 5;   //Modify if you add more menu items.
-    //Can you think of a more robust way of handling menu optons which would be easy to modify with a varying number of menu choices?
+    //Can you think of a more robust way of handling menu options which would be easy to modify with a varying number of menu choices?
 
     InventoryController myController;
     Scanner s;
@@ -45,7 +45,8 @@ public class InventoryView {
                 break;
             }
             case 3 : {
-                System.out.println("Reassign laptop - Not yet implemented");
+                System.out.println("Reassign laptop - In the process of being implemented");
+                reassignLaptop();
                 break;
             }
             case 4 : {
@@ -53,6 +54,27 @@ public class InventoryView {
                 break;
             }
         }
+
+    }
+
+    private void reassignLaptop() {
+
+        //Ask for laptop ID
+        //Fetch laptop info and display for user to confirm this is the correct laptop
+
+        int id;
+        System.out.println("Enter laptop ID to reassign");
+        try {
+            id = Integer.parseInt(s.nextLine());
+        } catch (NumberFormatException nf) {
+            System.out.println("Enter a number");
+            return;  //TODO give user another chance...
+        }
+
+        displayLaptopById(id);
+
+        //TODO once laptop has been found, ask for new staff member's name
+        //TODO Write this to the database, see draft method in InventoryModel
 
     }
 
@@ -73,13 +95,12 @@ public class InventoryView {
         Laptop l = new Laptop(make, model, staff);
 
 
-        String errorMessage = myController.requestAddLaptop(l);
+        boolean addedLaptop = myController.requestAddLaptop(l);
 
-        if (errorMessage == null ) {
+        if (addedLaptop) {
             System.out.println("New laptop added to database");
         } else {
-            System.out.println("New laptop could not be added to database");
-            System.out.println(errorMessage);
+            System.out.println("Database error - new laptop could not be added to database");
         }
 
     }
@@ -93,6 +114,7 @@ public class InventoryView {
         } else if (allLaptops.isEmpty()) {
             System.out.println("No laptops found in database");
         } else {
+            System.out.println("All laptops in the database:");
             for (Laptop l : allLaptops) {
                 System.out.println(l);   //Call the toString method in Laptop
             }
@@ -100,6 +122,15 @@ public class InventoryView {
     }
 
 
+    private void displayLaptopById(int id) {
+        Laptop l = myController.requestLaptopById(id);
+        if (l == null) {
+            System.out.println("Laptop " + id + " not found");
+        } else {
+            System.out.println(l);   //Call the toString method in Laptop
+
+        }
+    }
 
     private int displayMenuGetUserChoice() {
 

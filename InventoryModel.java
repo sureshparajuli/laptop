@@ -43,15 +43,18 @@ public class InventoryModel {
 
 
     public boolean setupDatabase() {
+
         return setupDatabase(false);
+
     }
 
     public boolean setupDatabase(boolean deleteAndRecreate) {
-        // TODO Auto-generated method stub
 
         try {
+
             createConnection();
-        } catch (Exception e) {
+
+        } catch (SQLException e) {
 
             System.err.println("Unable to connect to database. Error message and stack trace follow");
             System.err.println(e.getMessage());
@@ -61,8 +64,11 @@ public class InventoryModel {
 
 
         try {
+
             createTable(deleteAndRecreate);
+
         } catch (SQLException sqle) {
+
             System.err.println("Unable to create database. Error message and stack trace follow");
             System.err.println(sqle.getMessage() + " " + sqle.getErrorCode());
             sqle.printStackTrace();
@@ -123,56 +129,41 @@ public class InventoryModel {
 
             } else {
                 //Something else went wrong. If we can't create the table, no point attempting
-                //to run the rest of the code. Throw the exception again to be handled elsewhere. of the program.
-                throw sqle;
+                //to run the rest of the code. Throw the exception again to be handled elsewhere in the program.
+               throw sqle;
             }
         }
     }
 
-    private void createConnection() throws Exception {
+    private void createConnection() throws SQLException {
 
-        try {
             conn = DriverManager.getConnection(protocol + dbName + ";create=true", USER, PASS);
             statement = conn.createStatement();
             allStatements.add(statement);
-        } catch (Exception e) {
-            //There are a lot of things that could go wrong here. Should probably handle them all separately but have not done so here.
-            //Should put something more helpful here...
-            throw e;
-        }
 
     }
 
 
-    private void addTestData() throws Exception {
-        // Test data.
-        if (statement == null) {
-            //This isn't going to work
-            throw new Exception("Statement not initialized");
-        }
+    private void addTestData() throws LaptopDataAccessException {
+        // Add some test data.
+
         try {
-            String addRecord1 = "INSERT INTO laptops (make, model, staff) VALUES ('Toshiba', 'XQ-45', 'Ryan' )" ;
-            statement.executeUpdate(addRecord1);
-            String addRecord2 = "INSERT INTO laptops (make, model, staff) VALUES ('Sony', '1234', 'Jane' )" ;
-            statement.executeUpdate(addRecord2);
-            String addRecord3 = "INSERT INTO laptops (make, model, staff) VALUES ('Apple', 'Air', 'Alex' )" ;
-            statement.executeUpdate(addRecord3);
-        }
-        catch (SQLException sqle) {
-            System.err.println("Unable to add test data, check validity of SQL statements?");
-            System.err.println("Unable to create database. Error message and stack trace follow");
-            System.err.println(sqle.getMessage() + " " + sqle.getErrorCode());
-            sqle.printStackTrace();
+                String addRecord1 = "INSERT INTO laptops (make, model, staff) VALUES ('Toshiba', 'XQ-45', 'Ryan' )";
+                statement.executeUpdate(addRecord1);
+                String addRecord2 = "INSERT INTO laptops (make, model, staff) VALUES ('Sony', '1234', 'Jane' )";
+                statement.executeUpdate(addRecord2);
+                String addRecord3 = "INSERT INTO laptops (make, model, staff) VALUES ('Apple', 'Air', 'Alex' )";
+                statement.executeUpdate(addRecord3);
 
-            throw sqle;
+            } catch (SQLException sqle) {
+                String error = "Unable to add test data, check validity of SQL statements?";
+                throw new LaptopDataAccessException(error, sqle);
+            }
         }
-    }
-
 
 
 
     public void cleanup() {
-        // TODO Auto-generated method stub
         try {
             if (rs != null) {
                 rs.close();  //Close result set
@@ -202,13 +193,14 @@ public class InventoryModel {
                 System.out.println("Database connection closed");
             }
         } catch (SQLException se) {
+            System.out.println("Error closing database connection");
             se.printStackTrace();
         }
     }
 
 
 
-    public boolean addLaptop(Laptop laptop) {
+    public void addLaptop(Laptop laptop) throws LaptopDataAccessException {
 
 
         //Create SQL query to add this laptop info to DB
@@ -220,24 +212,20 @@ public class InventoryModel {
             psAddLaptop.setString(1, laptop.getMake());
             psAddLaptop.setString(2, laptop.getModel());
             psAddLaptop.setString(3, laptop.getStaff());
-
             psAddLaptop.execute();
         }
         catch (SQLException sqle) {
-            System.err.println("Error preparing statement or executing prepared statement to add laptop");
-            System.out.println(sqle.getErrorCode() + " " + sqle.getMessage());
-            sqle.printStackTrace();
-            return false;
+            String errorMessage = "Error preparing statement or executing prepared statement to add laptop";
+            throw new LaptopDataAccessException(errorMessage, sqle);
         }
-        return true;
     }
 
 
-    /** Returns null if any errors in fetching laptops
-     *  Returnd empty list if no laptops in DB
+    /** @return list of laptops in the DB (will be empty list if no laptops found in DB)
+     *  @throws LaptopDataAccessException if SQL error occurs
      *
      */
-    public LinkedList<Laptop> displayAllLaptops() {
+    public LinkedList<Laptop> displayAllLaptops() throws LaptopDataAccessException {
 
         LinkedList<Laptop> allLaptops = new LinkedList<Laptop>();
 
@@ -246,10 +234,8 @@ public class InventoryModel {
             rs = statement.executeQuery(displayAll);
         }
         catch (SQLException sqle) {
-            System.err.println("Error fetching all laptops");
-            System.out.println(sqle.getErrorCode() + " " + sqle.getMessage());
-            sqle.printStackTrace();
-            return null;
+            String errorMessage = "Database error fetching all laptops";
+            throw new LaptopDataAccessException(errorMessage, sqle);
         }
 
 
@@ -265,18 +251,86 @@ public class InventoryModel {
 
             }
         } catch (SQLException sqle) {
-            System.err.println("Error reading from result set after fetching all laptop data");
-            System.out.println(sqle.getErrorCode() + " " + sqle.getMessage());
-            sqle.printStackTrace();
-            return null;
-
+            String errorMessage = "Error reading from result set after fetching all laptop data";
+            throw new LaptopDataAccessException(errorMessage, sqle);
         }
 
         //if we get here, everything should have worked...
         //Return the list of laptops, which will be empty if there is no data in the database
         return allLaptops;
     }
-}
+
+
+    /** @return laptop object for a laptop ID.  Returns null if the ID is not found.
+     *  @throws LaptopDataAccessException if SQL error occurs
+     *
+     */
+
+    public Laptop fetchLaptop(int id) throws LaptopDataAccessException{
+        try {
+            String fetchLaptop = "SELECT * FROM laptops where id = ?";
+            PreparedStatement psFetch = conn.prepareStatement(fetchLaptop);
+            allStatements.add(psFetch);
+            psFetch.setInt(1, id);
+            rs = psFetch.executeQuery();
+
+            //Expect only one row if laptop is in DB, or zero (0) rows if it is not.
+
+            if (rs.next()) {
+                String make = rs.getString("make");
+                String model = rs.getString("model");
+                String staff = rs.getString("staff");
+
+                if (!rs.next()) {  //Make sure there are no more rows after the first row
+                    Laptop l = new Laptop(id, make, model, staff);
+                    return l;
+                } else {
+                    //more than one laptop found
+                    //Error condition - more than one laptop for primary key ID is a problem
+                    throw new LaptopDataAccessException("More than one laptop in database for ID " + id);
+                }
+            } else {
+                //rs has no rows - no laptop found - return null
+                return null;
+            }
+
+        } catch (SQLException sqle) {
+            String errorMessage = "Database error fetching laptop for ID " + id + " check inner exception for details";
+            throw new LaptopDataAccessException(errorMessage, sqle);
+
+        }
+
+    }
+
+
+    public boolean reassignLaptop(int id, String newUser) throws LaptopDataAccessException{
+
+        try {
+            String fetchLaptop = "UPDATE (staff) FROM laptops where id = ?";
+            PreparedStatement psFetch = conn.prepareStatement(fetchLaptop);
+            psFetch.setInt(1, id);
+            //We expect exactly one row to be modified.
+            int rowsModified = psFetch.executeUpdate();
+
+            if (rowsModified == 1) {
+                return true;   //What can we return to indicate no laptop?
+            } else if (rowsModified == 0 ){
+                throw new LaptopDataAccessException("No laptop with ID number " + id + " found");
+            } else {
+                //rowsModified is not 0 or 1 - so more than 1 row was modified. (Can executeUpdate return negative numbers? I don't think so...)
+                throw new LaptopDataAccessException("More than one laptop with laptop id " + id);
+            }
+        } catch (SQLException sqle) {
+            //Wrap the SQLException in our own custom exception and re-throw it for Controller to handle
+            String errorMessage = "Error changing staff assignment laptop number " + id;
+            throw new LaptopDataAccessException(errorMessage, sqle);
+
+
+        }
+
+    }
+    }
+
 
 
 

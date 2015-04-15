@@ -1,5 +1,6 @@
 /** @author Clara MCTC Java Programming Class */
 
+import java.sql.SQLException;
 import java.util.LinkedList;
 
 public class InventoryController {
@@ -14,15 +15,15 @@ public class InventoryController {
         //http://hellotojavaworld.blogspot.com/2010/11/runtimeaddshutdownhook.html
         AddShutdownHook closeDBConnection = new AddShutdownHook();
         closeDBConnection.attachShutdownHook();
-        //Can put code in here to try to shut down the DB connection in a tidy manner if possible
+        //Can put code in here to try to shut down the DB connection in a tidy manner if possible. This code runs if you click the Stop button.
 
         try {
             InventoryController controller = new InventoryController();
 
-
             db = new InventoryModel(controller);
 
             boolean setup = db.setupDatabase();
+
             if (setup == false) {
                 System.out.println("Error setting up database, see error messages. Clean up database connections.... Quitting program ");
 
@@ -37,6 +38,7 @@ public class InventoryController {
         }
 
         finally {
+
             if (db != null) {
                 db.cleanup();
             }
@@ -44,35 +46,46 @@ public class InventoryController {
 
     }
 
-    public String requestAddLaptop(Laptop l) {
+    public boolean requestAddLaptop(Laptop l) {
 
         //This message should arrive from the UI. Send a message to the db to request that this laptop is added.
         //Return error message, if any. Return null if transaction was successful.
-        boolean success = db.addLaptop(l);
-        if (success == true ) {
-            return null;   //Null means all was well.
-        }
-        else {
-            return "Unable to add laptop to database";
+        try {
+            db.addLaptop(l);
+            System.out.println("Laptop " + l + " added");
+            return true;
+        }  catch (LaptopDataAccessException le) {
+            System.out.println("Failed to add laptop " + le);
+            return false;
         }
 
     }
 
     public LinkedList<Laptop> requestAllInventory() {
 
-
-        LinkedList<Laptop> allLaptops = db.displayAllLaptops();
-        if (allLaptops == null ) {
+        try {
+            LinkedList<Laptop> allLaptops = db.displayAllLaptops();
+            return allLaptops;
+        } catch (LaptopDataAccessException le) {
             System.out.println("Controller detected error in fetching laptops from database");
             return null;   //Null means error. View can deal with how to display error to user.
         }
-        else {
-            return allLaptops;
+
+    }
+
+    public Laptop requestLaptopById(int id) {
+
+        try {
+            Laptop l = db.fetchLaptop(id);
+            return l;
+        }
+        catch (LaptopDataAccessException sqle) {
+            System.out.println("Error fetching laptop (request laptop by ID)");
+            return null;
         }
 
 
     }
-
 }
 
 class AddShutdownHook {
@@ -80,10 +93,11 @@ class AddShutdownHook {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 System.out.println("Shutdown hook: program closed, attempting to shut database connection");
-                //Unfortunately this doesn't seem to be called when a program is restarted in eclipse.
-                //Avoid restarting your programs. If you do, and you get an existing connection error you can either
-                // 1. restart eclipse - Menu > Restart
-                // 2. Delete your database folder. In this project it's a folder called laptopinventoryDB (or similar) in the root directory of your project.
+                //Unfortunately this doesn't seem to be called when a program is restarted in IntelliJ.
+                //Avoid restarting your programs, always shut down properly.
+                // If you do restart your program, and you get an existing connection error you can
+                //delete your database folder. In this project it's a folder called laptopinventoryDB (or similar)
+                // in the root directory of your project.
                 InventoryController.db.cleanup();
             }
         });
