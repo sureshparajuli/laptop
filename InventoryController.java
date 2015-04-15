@@ -4,7 +4,13 @@ import java.sql.SQLException;
 import java.util.LinkedList;
 
 public class InventoryController {
-    
+
+    //This class converses with the database and the UI. It checks DB requests for errors and forwards messages to UI.
+    //Some DB errors are recoverable, some are not. The ones that are not, the program will quit. The ones that can be
+    //fixed
+
+    //Custom Exception class used - only so we can use a custom exception name. LaptopDataAccessExceptions often
+    //wrap the source exception (e.g. SQLException) so that can be used, logged, whatever.
 
     static InventoryModel db ;
 
@@ -49,7 +55,7 @@ public class InventoryController {
     public boolean requestAddLaptop(Laptop l) {
 
         //This message should arrive from the UI. Send a message to the db to request that this laptop is added.
-        //Return error message, if any. Return null if transaction was successful.
+        //Return error message, if any. Return true if transaction was successful.
         try {
             db.addLaptop(l);
             System.out.println("Laptop " + l + " added");
@@ -77,7 +83,7 @@ public class InventoryController {
 
         try {
             Laptop l = db.fetchLaptop(id);
-            return l;
+            return l;   //This will be null 
         }
         catch (LaptopDataAccessException sqle) {
             System.out.println("Error fetching laptop (request laptop by ID)");
