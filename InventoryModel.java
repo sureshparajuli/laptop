@@ -44,7 +44,7 @@ public class InventoryModel {
 
     public boolean setupDatabase() {
 
-        return setupDatabase(false);
+        return setupDatabase(false);  //true = delete and recreate database, false = keep existing database
 
     }
 
@@ -77,24 +77,26 @@ public class InventoryModel {
 
 
         //Remove the test data for real program
-        try {
-            addTestData();
+
+        //If we are deleting and recreating the table, we'll need to add test data.
+        if (deleteAndRecreate) {
+
+            try {
+                addTestData();
+
+           } catch (Exception sqle) {
+
+                System.err.println("Unable to add test data to database. Error message and stack trace follow");
+                System.err.println(sqle.getMessage());
+                sqle.printStackTrace();
+                return false;
+
+            }
         }
-        catch (Exception sqle) {
-
-            System.err.println("Unable to add test data to database. Error message and stack trace follow");
-            System.err.println(sqle.getMessage());
-            sqle.printStackTrace();
-            return false;
-
-
-        }
-
         //At this point, it seems like everything worked.
 
         return true;
     }
-
 
 
     private void createTable(boolean deleteAndRecreate) throws SQLException {
@@ -119,6 +121,7 @@ public class InventoryModel {
                     try {
                         statement.executeUpdate(deleteTableSQL);
                         statement.executeUpdate(createLaptopTableSQL);
+
                     } catch (SQLException e) {
                         //Still doesn't work. Throw the exception.
                         throw e;

@@ -1,8 +1,6 @@
 /** @author Clara MCTC Java Programming Class */
 
-import com.sun.org.apache.xerces.internal.util.SynchronizedSymbolTable;
 
-import java.sql.SQLException;
 import java.util.LinkedList;
 
 public class InventoryController {
@@ -12,7 +10,10 @@ public class InventoryController {
     //The ones that can be fixed (e.g. user not found in DB) will be sent to InventoryView so it can ask the user to try again
 
     //Custom Exception class used - only so we can use a custom exception name. LaptopDataAccessExceptions often
-    //wrap the source exception (e.g. SQLException) so that can be used, logged, whatever.
+    //wrap the source exception (e.g. SQLException) so that can be used, logged, whatever. Here we'll re-throw exceptions
+    //and crash the program so the programmer knows about the error and can fix it. There's nothing the user can do if
+    //the programmer has written faulty SQL so it's better to have the controller throw the errors so they can be detected
+    //and fixed during the development process.
 
     static InventoryModel db ;
 
@@ -57,22 +58,6 @@ public class InventoryController {
     }
 
 
-    public void debugMessages(Throwable cause) {
-        //Print error messages for debugging. Production code - log somewhere, not print out for user.
-        if (cause != null) {
-            System.out.println("Quitting program, exception message(s) follow");
-            System.out.println(cause.getMessage());
-            System.out.println(cause.getStackTrace());
-            while (cause.getCause() != null) {
-                System.out.println("Nested exception");
-                System.out.println(cause.getCause().getMessage());
-                System.out.println(cause.getCause().getStackTrace());
-                cause = cause.getCause();
-                }
-        }
-
-    }
-
     public void requestAddLaptop(Laptop l) {
 
         //This message should arrive from the UI. Send a message to the db to request that this laptop is added.
@@ -85,9 +70,7 @@ public class InventoryController {
 
         }  catch (LaptopDataAccessException le) {
             System.out.println("Failed to add laptop " + le);
-            debugMessages(le);
-            throw le;   //crash the program
-            //return false;
+            throw le;   //crash the program, programmer needs to fix this
         }
 
     }
@@ -105,10 +88,7 @@ public class InventoryController {
             return allLaptops;
         } catch (LaptopDataAccessException le) {
             System.out.println("Controller detected error in fetching laptops from database");
-            debugMessages(le);
-            throw le;
-//            return null;   //Null means error. View can deal with how to display error to user.
-
+            throw le;   //Crash program, programmer needs to fix
         }
 
     }
@@ -129,8 +109,7 @@ public class InventoryController {
         }
         catch (LaptopDataAccessException le) {
             System.out.println("Error fetching laptop (request laptop by ID)");
-            debugMessages(le);
-            throw le;
+            throw le;  //Crash program, programmer must fix
         }
 
 
