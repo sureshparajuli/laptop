@@ -45,11 +45,13 @@ public class InventoryView {
                 break;
             }
             case 3 : {
+                //TODO finish this
                 System.out.println("Reassign laptop - In the process of being implemented");
                 reassignLaptop();
                 break;
             }
             case 4 : {
+                //TODO implement this
                 System.out.println("Retire laptop - Not yet implemented");
                 break;
             }
@@ -76,6 +78,8 @@ public class InventoryView {
         //TODO once laptop has been found, ask for new staff member's name
         //TODO Write this to the database, see draft method in InventoryModel
 
+        //Remember InventoryModel.reassignLaptop returns true for sucess, false if laptop with this ID is f
+
     }
 
 
@@ -94,14 +98,10 @@ public class InventoryView {
 
         Laptop l = new Laptop(make, model, staff);
 
+        myController.requestAddLaptop(l);
 
-        boolean addedLaptop = myController.requestAddLaptop(l);
+        System.out.println("New laptop added to database");
 
-        if (addedLaptop) {
-            System.out.println("New laptop added to database");
-        } else {
-            System.out.println("Database error - new laptop could not be added to database");
-        }
 
     }
 

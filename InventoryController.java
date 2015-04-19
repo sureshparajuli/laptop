@@ -1,13 +1,15 @@
 /** @author Clara MCTC Java Programming Class */
 
+import com.sun.org.apache.xerces.internal.util.SynchronizedSymbolTable;
+
 import java.sql.SQLException;
 import java.util.LinkedList;
 
 public class InventoryController {
 
     //This class converses with the database and the UI. It checks DB requests for errors and forwards messages to UI.
-    //Some DB errors are recoverable, some are not. The ones that are not, the program will quit. The ones that can be
-    //fixed
+    //Some DB errors are recoverable, some are not. The ones that are not, the program will quit (e.g. database errors).
+    //The ones that can be fixed (e.g. user not found in DB) will be sent to InventoryView so it can ask the user to try again
 
     //Custom Exception class used - only so we can use a custom exception name. LaptopDataAccessExceptions often
     //wrap the source exception (e.g. SQLException) so that can be used, logged, whatever.
@@ -21,7 +23,8 @@ public class InventoryController {
         //http://hellotojavaworld.blogspot.com/2010/11/runtimeaddshutdownhook.html
         AddShutdownHook closeDBConnection = new AddShutdownHook();
         closeDBConnection.attachShutdownHook();
-        //Can put code in here to try to shut down the DB connection in a tidy manner if possible. This code runs if you click the Stop button.
+        //Can put code in here to try to shut down the DB connection in a tidy manner if possible.
+        //This code runs if you click the Stop button in IntelliJ console.
 
         try {
             InventoryController controller = new InventoryController();
@@ -41,6 +44,7 @@ public class InventoryController {
             }
 
             new InventoryView(controller).launchUI();
+
         }
 
         finally {
@@ -52,42 +56,81 @@ public class InventoryController {
 
     }
 
-    public boolean requestAddLaptop(Laptop l) {
+
+    public void debugMessages(Throwable cause) {
+        //Print error messages for debugging. Production code - log somewhere, not print out for user.
+        if (cause != null) {
+            System.out.println("Quitting program, exception message(s) follow");
+            System.out.println(cause.getMessage());
+            System.out.println(cause.getStackTrace());
+            while (cause.getSuppressed() != null) {
+                System.out.println("Nested exception");
+                cause = cause.getCause();
+                System.out.println(cause.getMessage());
+                System.out.println(cause.getStackTrace());
+            }
+        }
+
+    }
+
+    public void requestAddLaptop(Laptop l) {
 
         //This message should arrive from the UI. Send a message to the db to request that this laptop is added.
-        //Return error message, if any. Return true if transaction was successful.
+        //Throws LaptopDataAccessException in case of unrecoverable errors e.g. database corrupted or programmer
+        //error in writing database code or SQL statements.
+
         try {
             db.addLaptop(l);
             System.out.println("Laptop " + l + " added");
-            return true;
+
         }  catch (LaptopDataAccessException le) {
             System.out.println("Failed to add laptop " + le);
-            return false;
+            debugMessages(le);
+            throw le;   //crash the program
+            //return false;
         }
 
     }
 
     public LinkedList<Laptop> requestAllInventory() {
 
+
+        //This message should arrive from the UI. Send a message to the db to request all laptop data.
+        //Returns a list of laptop objects
+        //Throws LaptopDataAccessException in case of unrecoverable errors e.g. database corrupted or programmer
+        //error in writing database code or SQL statements.
+
         try {
             LinkedList<Laptop> allLaptops = db.displayAllLaptops();
             return allLaptops;
         } catch (LaptopDataAccessException le) {
             System.out.println("Controller detected error in fetching laptops from database");
-            return null;   //Null means error. View can deal with how to display error to user.
+            debugMessages(le);
+            throw le;
+//            return null;   //Null means error. View can deal with how to display error to user.
+
         }
 
     }
 
     public Laptop requestLaptopById(int id) {
 
+        //This message should arrive from the UI. Send a message to the db to request this laptop.
+        //Returns a Laptop object if laptop is found, or null if it is not found.
+
+        //Throws LaptopDataAccessException in case of unrecoverable errors e.g. database corrupted or programmer
+        //error in writing database code or SQL statements;
+
+        // Also crashes in the event of more than one laptop found for a laptop ID  //TODO is this the right approach for this case?
+
         try {
             Laptop l = db.fetchLaptop(id);
-            return l;   //This will be null 
+            return l;   //This will be null if laptop is not found
         }
-        catch (LaptopDataAccessException sqle) {
+        catch (LaptopDataAccessException le) {
             System.out.println("Error fetching laptop (request laptop by ID)");
-            return null;
+            debugMessages(le);
+            throw le;
         }
 
 
