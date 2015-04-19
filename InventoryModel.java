@@ -215,12 +215,13 @@ public class InventoryModel {
             psAddLaptop.setString(3, laptop.getStaff());
             psAddLaptop.execute();
 
-            //TODO retrieve new laptop ID and add it to the Laptop laptop so calling methods can use it.
+            //Retrieve new laptop ID and add it to the Laptop laptop so calling methods can use it.
 
             ResultSet keys = psAddLaptop.getGeneratedKeys();
-            //We assume just one key....
-            keys.first();
+            //We assume just one key, which will be the first thing in the ResultSet
+            keys.next();
             int laptopID = keys.getInt(1);
+            laptop.id = laptopID;
 
 
         }

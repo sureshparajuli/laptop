@@ -109,9 +109,7 @@ public class InventoryView {
     private void displayAllInventory() {
 
         LinkedList<Laptop> allLaptops = myController.requestAllInventory();
-        if (allLaptops == null) {
-            System.out.println("Error fetching all laptops from the database");
-        } else if (allLaptops.isEmpty()) {
+        if (allLaptops.isEmpty()) {
             System.out.println("No laptops found in database");
         } else {
             System.out.println("All laptops in the database:");

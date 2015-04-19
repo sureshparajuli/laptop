@@ -63,12 +63,12 @@ public class InventoryController {
             System.out.println("Quitting program, exception message(s) follow");
             System.out.println(cause.getMessage());
             System.out.println(cause.getStackTrace());
-            while (cause.getSuppressed() != null) {
+            while (cause.getCause() != null) {
                 System.out.println("Nested exception");
+                System.out.println(cause.getCause().getMessage());
+                System.out.println(cause.getCause().getStackTrace());
                 cause = cause.getCause();
-                System.out.println(cause.getMessage());
-                System.out.println(cause.getStackTrace());
-            }
+                }
         }
 
     }
