@@ -2,7 +2,8 @@
 
 
 //TODO remove custom exception, re-throw as RuntimeException
-//TODO Replace Derby with MySQL
+
+import org.omg.SendingContext.RunTime;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -14,9 +15,6 @@ import java.util.LinkedList;
 
 
 public class InventoryModel {
-
-
-    //TODO replace with connection to MySQL
 
 
     static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";        //Configure the driver needed
@@ -68,7 +66,7 @@ public class InventoryModel {
 
     }
 
-    public boolean setupDatabase(boolean deleteAndRecreate) {     //TODO create if not exists
+    public boolean setupDatabase(boolean deleteAndRecreate) {
 
         try {
 
@@ -186,7 +184,7 @@ public class InventoryModel {
     }
 
 
-    private void addTestData() throws LaptopDataAccessException {
+    private void addTestData()  {
         // Add some test data.
 
         try {
@@ -199,7 +197,7 @@ public class InventoryModel {
 
             } catch (SQLException sqle) {
                 String error = "Unable to add test data, check validity of SQL statements?";
-                throw new LaptopDataAccessException(error, sqle);
+                throw new RuntimeException(error, sqle);
             }
         }
 
@@ -242,7 +240,7 @@ public class InventoryModel {
 
 
 
-    public void addLaptop(Laptop laptop) throws LaptopDataAccessException {
+    public void addLaptop(Laptop laptop) {
 
 
         //Create SQL query to add this laptop info to DB
@@ -270,16 +268,16 @@ public class InventoryModel {
         }
         catch (SQLException sqle) {
             String errorMessage = "Error preparing statement or executing prepared statement to add laptop";
-            throw new LaptopDataAccessException(errorMessage, sqle);
+            throw new RuntimeException(errorMessage, sqle);
         }
     }
 
 
     /** @return list of laptops in the DB (will be empty list if no laptops found in DB)
-     *  @throws LaptopDataAccessException if SQL error occurs
+     *  @throws java.lang.RuntimeException if SQL error occurs
      *
      */
-    public LinkedList<Laptop> displayAllLaptops() throws LaptopDataAccessException {
+    public LinkedList<Laptop> displayAllLaptops() {
 
         LinkedList<Laptop> allLaptops = new LinkedList();
 
@@ -289,7 +287,7 @@ public class InventoryModel {
         }
         catch (SQLException sqle) {
             String errorMessage = "Database error fetching all laptops";
-            throw new LaptopDataAccessException(errorMessage, sqle);
+            throw new RuntimeException(errorMessage, sqle);
         }
 
 
@@ -306,7 +304,7 @@ public class InventoryModel {
             }
         } catch (SQLException sqle) {
             String errorMessage = "Error reading from result set after fetching all laptop data";
-            throw new LaptopDataAccessException(errorMessage, sqle);
+            throw new RuntimeException(errorMessage, sqle);
         }
 
         //if we get here, everything should have worked...
@@ -316,11 +314,11 @@ public class InventoryModel {
 
 
     /** @return laptop object for a laptop ID.  Returns null if the ID is not found.
-     *  @throws LaptopDataAccessException if SQL error occurs
+     *  @throws RuntimeException if SQL error occurs
      *
      */
 
-    public Laptop fetchLaptop(int id) throws LaptopDataAccessException{
+    public Laptop fetchLaptop(int id) {
         try {
             String fetchLaptop = "SELECT * FROM laptops where id = ?";
             PreparedStatement psFetch = conn.prepareStatement(fetchLaptop);
@@ -341,7 +339,7 @@ public class InventoryModel {
                 } else {
                     //more than one laptop found
                     //Error condition - more than one laptop for primary key ID is a problem that must be fixed
-                    throw new LaptopDataAccessException("More than one laptop in database for ID " + id);
+                    throw new RuntimeException("More than one laptop in database for ID " + id);
                 }
             } else {
                 //rs has no rows - no laptop found - return null
@@ -350,7 +348,7 @@ public class InventoryModel {
 
         } catch (SQLException sqle) {
             String errorMessage = "Database error fetching laptop for ID " + id + " check inner exception for details";
-            throw new LaptopDataAccessException(errorMessage, sqle);
+            throw new RuntimeException(errorMessage, sqle);
 
         }
 
@@ -359,9 +357,9 @@ public class InventoryModel {
     //TODO test this method. Use it in the code.
 
     /** @return true if laptop update is successful (1 row is changed) or false if laptop not updated = this will be because the id isn't in the database
-     * @throws LaptopDataAccessException if more than one laptop with that ID found or in the case of general DB errors */
+     * @throws java.lang.RuntimeException if more than one laptop with that ID found or in the case of general DB errors */
 
-    public boolean reassignLaptop(int id, String newUser) throws LaptopDataAccessException{
+    public boolean reassignLaptop(int id, String newUser) {
 
         try {
             String reassignLaptop = "UPDATE laptops set staff = ? where id = ?";
@@ -377,12 +375,12 @@ public class InventoryModel {
                 return false;
             } else {
                 //rowsModified is not 0 or 1 - so more than 1 row was modified. (Can executeUpdate return negative numbers? I don't think so...)
-                throw new LaptopDataAccessException("More than one laptop with laptop id " + id);
+                throw new RuntimeException("More than one laptop with laptop id " + id);
             }
         } catch (SQLException sqle) {
             //Wrap the SQLException in our own custom exception and re-throw it for Controller to handle
             String errorMessage = "Error changing staff assignment laptop number " + id;
-            throw new LaptopDataAccessException(errorMessage, sqle);
+            throw new RuntimeException(errorMessage, sqle);
 
 
         }
