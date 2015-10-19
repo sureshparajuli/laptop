@@ -125,7 +125,7 @@ class AddShutdownHook {
                 //Avoid restarting your programs, always shut down properly.
                 // If you do restart your program, and you get an existing connection error you can
                 //delete your database folder. In this project it's a folder called laptopinventoryDB (or similar)
-                // in the root directory of your project.
+                // in the root directory of your project.   //TODO remove (?) MySQL handles crashed programs better(?)
                 InventoryController.db.cleanup();
             }
         });

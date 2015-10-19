@@ -8,6 +8,12 @@ public class InventoryView {
     private final int QUIT = 5;   //Modify if you add more menu items.
     //TODO Can you think of a more robust way of handling menu options which would be easy to modify with a varying number of menu choices?
 
+    //TODO number validator class
+
+    //TODO way to back out of choice
+
+
+
     InventoryController myController;
     Scanner s;
 
@@ -23,6 +29,7 @@ public class InventoryView {
         while (true) {
 
             int userChoice = displayMenuGetUserChoice();
+
             if (userChoice == QUIT ) {
                 break;
             }
@@ -61,11 +68,17 @@ public class InventoryView {
 
     private void reassignLaptop() {
 
+
+        //TODO finish this
+
         //Ask for laptop ID
         //Fetch laptop info and display for user to confirm this is the correct laptop
 
         int id;
         System.out.println("Enter laptop ID to reassign");
+
+
+
         try {
             id = Integer.parseInt(s.nextLine());
         } catch (NumberFormatException nf) {
@@ -78,7 +91,7 @@ public class InventoryView {
         //TODO once laptop has been found, ask for new staff member's name
         //TODO Write this to the database, see draft method in InventoryModel
 
-        //Remember InventoryModel.reassignLaptop returns true for sucess, false if laptop with this ID is f
+        //Remember InventoryModel.reassignLaptop returns true for success, false if laptop with this ID is not found
 
     }
 
@@ -112,7 +125,7 @@ public class InventoryView {
         if (allLaptops.isEmpty()) {
             System.out.println("No laptops found in database");
         } else {
-            System.out.println("All laptops in the database:");
+            System.out.println("List of all laptops in the database:");
             for (Laptop l : allLaptops) {
                 System.out.println(l);   //Call the toString method in Laptop
             }

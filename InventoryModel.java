@@ -1,5 +1,9 @@
 /** @author Clara MCTC Java Programming Class */
 
+
+//TODO remove custom exception, re-throw as RuntimeException
+//TODO Replace Derby with MySQL
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,15 +15,19 @@ import java.util.LinkedList;
 
 public class InventoryModel {
 
-    // JDBC driver name, protocol, used to create a connection to the DB
-    private static String protocol = "jdbc:derby:";
-    private static String dbName = "laptopInventoryDB";
+
+    //TODO replace with connection to MySQL
 
 
+    static final String JDBC_DRIVER = "com.mysql.jdbc.Driver";        //Configure the driver needed
+    static final String DB_CONNECTION_URL = "jdbc:mysql://localhost:3306/";     //Connection string – where's the database?
 
-    //  Database credentials - for embedded, usually defaults. A client-server DB would need to authenticate connections
-    private static final String USER = "temp";
-    private static final String PASS = "password";
+    static final String DB_NAME = "laptop";
+
+    static final String LAPTOP_TABLE_NAME = "user_laptops";
+
+    static final String USER = "clara";   //TODO replace with your username
+    static final String PASSWORD = "password";   //TODO replace with your password
 
 
     InventoryController myController;
@@ -30,25 +38,37 @@ public class InventoryModel {
 
     ResultSet rs = null;
 
-    LinkedList<Statement> allStatements = new LinkedList<Statement>();
+    LinkedList<Statement> allStatements = new LinkedList();
 
     PreparedStatement psAddLaptop = null;
-
 
     public InventoryModel(InventoryController controller) {
 
         this.myController = controller;
 
+        try {
+            Class.forName(JDBC_DRIVER);
+
+            //When the driver class is instantiated, it should register itself with the DriverManager.
+            //You don't need to do anything else here.
+
+        } catch (ClassNotFoundException ce) {
+            //Log and re-throw.
+            System.out.println("Can't find JDBC driver class");
+            throw new RuntimeException(ce);     //TODO All other places too.
+        }
     }
 
 
     public boolean setupDatabase() {
 
+        //**TODO change this from true to false as you need for testing/debugging **//
+
         return setupDatabase(false);  //true = delete and recreate database, false = keep existing database
 
     }
 
-    public boolean setupDatabase(boolean deleteAndRecreate) {
+    public boolean setupDatabase(boolean deleteAndRecreate) {     //TODO create if not exists
 
         try {
 
@@ -76,7 +96,7 @@ public class InventoryModel {
         }
 
 
-        //Remove the test data for real program
+        //TODO Remove the test data for real program
 
         //If we are deleting and recreating the table, we'll need to add test data.
         if (deleteAndRecreate) {
@@ -102,45 +122,64 @@ public class InventoryModel {
     private void createTable(boolean deleteAndRecreate) throws SQLException {
 
 
-        String createLaptopTableSQL = "CREATE TABLE laptops (id int PRIMARY KEY GENERATED ALWAYS AS IDENTITY, make varchar(30), model varchar(30), staff varchar(50))";
-        String deleteTableSQL = "DROP TABLE laptops";
+        String createLaptopTableSQL = "CREATE TABLE laptops (id int PRIMARY KEY AUTO_INCREMENT, make varchar(30), model varchar(30), staff varchar(50))";
+        String deleteTableSQL = "DROP TABLE " + LAPTOP_TABLE_NAME;
+
+        String doesTableExistSQL = "SHOW TABLES LIKE '" + LAPTOP_TABLE_NAME + "'";
+
+        boolean laptopsTableAlreadyExists = false;
+
 
         try {
+            rs = statement.executeQuery(doesTableExistSQL);
+            if (rs.next()){
+                if (rs.getString("Tables_in_laptop").equals(LAPTOP_TABLE_NAME)) {
+                    //Table does exists
+                    System.out.println(LAPTOP_TABLE_NAME + " does exist already");
+                    laptopsTableAlreadyExists = true;
+                } else {
+                    System.out.println(LAPTOP_TABLE_NAME + " does not currently exist");
+                    laptopsTableAlreadyExists = false;
+                }
+            }
+        } catch (SQLException sqle) {
+            System.out.println("Error testing if table " + LAPTOP_TABLE_NAME + " exists");
+            throw sqle;
+        }
+
+
+
+        //Need to delete table and re-create
+        if (deleteAndRecreate) {
+            //Check if table exists - if it doesn't exist, deleting would cause error
+            if (laptopsTableAlreadyExists) {
+                statement.executeUpdate(deleteTableSQL);
+                System.out.println("Deleted old version of table");
+            }
+
+            //Now table is deleted (if it existed). Create new table.
             statement.executeUpdate(createLaptopTableSQL);
             System.out.println("Created laptop table");
 
-        } catch (SQLException sqle) {
-            //Seems the table already exists, or some other error has occurred.
-            //Let's try to check if the DB exists already by checking the error code returned. If so, delete it and re-create it
+        }
 
 
-            if (sqle.getSQLState().startsWith("X0") ) {    //Error code for table already existing starts with XO
-                if (deleteAndRecreate == true) {
-
-                    System.out.println("laptops table appears to exist already, delete and recreate");
-                    try {
-                        statement.executeUpdate(deleteTableSQL);
-                        statement.executeUpdate(createLaptopTableSQL);
-
-                    } catch (SQLException e) {
-                        //Still doesn't work. Throw the exception.
-                        throw e;
-                    }
-                } else {
-                    //do nothing - if the table exists, leave it be.
-                }
-
-            } else {
-                //Something else went wrong. If we can't create the table, no point attempting
-                //to run the rest of the code. Throw the exception again to be handled elsewhere in the program.
-               throw sqle;
-            }
+        //Don't delete and re-create - just create if it doesn't exist
+        else {
+             if (laptopsTableAlreadyExists) {
+                 //table does not exist yet
+                 statement.executeUpdate(createLaptopTableSQL);
+                 System.out.println("Created laptop table");
+             }
         }
     }
 
     private void createConnection() throws SQLException {
 
-            conn = DriverManager.getConnection(protocol + dbName + ";create=true", USER, PASS);
+
+            conn = DriverManager.getConnection(DB_CONNECTION_URL + DB_NAME, USER, PASSWORD);
+
+
             statement = conn.createStatement();
             allStatements.add(statement);
 
@@ -215,6 +254,7 @@ public class InventoryModel {
             allStatements.add(psAddLaptop);
             psAddLaptop.setString(1, laptop.getMake());
             psAddLaptop.setString(2, laptop.getModel());
+            psAddLaptop.setString(2, laptop.getModel());
             psAddLaptop.setString(3, laptop.getStaff());
             psAddLaptop.execute();
 
@@ -241,7 +281,7 @@ public class InventoryModel {
      */
     public LinkedList<Laptop> displayAllLaptops() throws LaptopDataAccessException {
 
-        LinkedList<Laptop> allLaptops = new LinkedList<Laptop>();
+        LinkedList<Laptop> allLaptops = new LinkedList();
 
         String displayAll = "SELECT * FROM laptops";
         try {
